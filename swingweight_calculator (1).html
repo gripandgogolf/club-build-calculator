@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>4-Port Iron Swing Weight Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f1117; --bg2: #181c27; --bg3: #1f2435;
+      --border: #2a2f42; --border2: #363c52;
+      --text: #e8eaf2; --text2: #8b91a8; --text3: #555d78;
+      --accent: #4f9cf9; --accent2: #3d7fd6;
+      --success: #3ecf8e; --success-bg: #0d2e1f; --success-border: #1a5c3a;
+      --warning: #f5a623; --warning-bg: #2e1f0a; --warning-border: #5c3a10;
+      --danger: #f05252; --danger-bg: #2e0f0f; --danger-border: #5c1a1a;
+      --info: #a78bfa; --info-bg: #1a1430; --info-border: #3d2d6e;
+      --mono: 'DM Mono', monospace; --sans: 'DM Sans', sans-serif;
+    }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
+    .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 20px 24px; display: flex; align-items: center; gap: 16px; }
+    .header-icon { width: 36px; height: 36px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .header h1 { font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+    .header p { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .header-badge { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--text3); background: var(--bg3); border: 1px solid var(--border); padding: 4px 10px; border-radius: 20px; }
+    .main { padding: 20px 24px; max-width: 960px; margin: 0 auto; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+    .card h3 { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+    .ref-bar { display: flex; gap: 16px; flex-wrap: wrap; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; margin-bottom: 14px; font-family: var(--mono); font-size: 11px; color: var(--text3); }
+    .ref-bar strong { color: var(--accent); font-weight: 500; }
+    .field { margin-bottom: 12px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 5px; }
+    .field input[type=number] { width: 100%; padding: 8px 10px; font-size: 14px; font-family: var(--mono); background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; color: var(--text); outline: none; transition: border-color 0.15s; }
+    .field input[type=number]:focus { border-color: var(--accent); }
+    .field input[type=number]::-webkit-inner-spin-button { opacity: 0.5; }
+    .hint { font-size: 11px; color: var(--text3); margin-top: 4px; }
+    .btn-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+    .sw-btn { padding: 5px 12px; font-size: 13px; font-family: var(--mono); font-weight: 500; border: 1px solid var(--border2); border-radius: 7px; background: transparent; color: var(--text2); cursor: pointer; transition: all 0.12s; }
+    .sw-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .sw-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+    .sw-btn.num-btn { padding: 4px 9px; font-size: 12px; }
+    .tol-box { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .tol-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+    .tol-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tol-pill { font-family: var(--mono); font-size: 12px; color: var(--text2); background: var(--bg3); border: 1px solid var(--border); padding: 4px 10px; border-radius: 20px; }
+    .results-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+    .results-card h3 { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .metric { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+    .metric .m-label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+    .metric .m-value { font-family: var(--mono); font-size: 24px; font-weight: 500; color: var(--text); }
+    .metric .m-value.accent { color: var(--accent); }
+    .section-title { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin: 16px 0 8px; display: flex; align-items: center; gap: 8px; }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .port-list { display: flex; flex-direction: column; gap: 6px; }
+    .port-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 9px; font-size: 13px; flex-wrap: wrap; }
+    .port-item.exact { border-color: var(--success-border); background: var(--success-bg); }
+    .port-item.close { border-color: var(--warning-border); background: var(--warning-bg); }
+    .port-ports { font-family: var(--mono); font-weight: 500; color: var(--text); flex: 1; min-width: 150px; }
+    .port-sw { font-family: var(--mono); font-weight: 500; font-size: 14px; min-width: 42px; }
+    .port-item.exact .port-sw { color: var(--success); }
+    .port-item.close .port-sw { color: var(--warning); }
+    .badge { font-family: var(--mono); font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+    .badge.exact { background: var(--success); color: #0a1f14; }
+    .badge.close { background: var(--warning); color: #1f0f00; }
+    .port-meta { font-size: 11px; color: var(--text3); margin-left: auto; text-align: right; font-family: var(--mono); }
+
+    /* Closest build display */
+    .closest-build {
+      background: var(--bg3);
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .closest-build .cb-title {
+      font-size: 11px; font-weight: 600; color: var(--text3);
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px;
+    }
+    .closest-build .cb-row {
+      display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 6px;
+    }
+    .cb-stat {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 7px; padding: 8px 12px; flex: 1; min-width: 100px;
+    }
+    .cb-stat .cs-label { font-size: 10px; color: var(--text3); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .cb-stat .cs-value { font-family: var(--mono); font-size: 16px; font-weight: 500; color: var(--text); }
+    .cb-stat .cs-value.over  { color: var(--danger); }
+    .cb-stat .cs-value.under { color: var(--warning); }
+    .cb-stat .cs-value.ok    { color: var(--success); }
+
+    /* Recommendations */
+    .rec-box {
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+    .rec-box.info  { background: var(--info-bg);    border: 1px solid var(--info-border); }
+    .rec-box.warn  { background: var(--warning-bg); border: 1px solid var(--warning-border); }
+    .rec-box.good  { background: var(--success-bg); border: 1px solid var(--success-border); }
+    .rec-box .rec-title {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.08em; margin-bottom: 8px;
+    }
+    .rec-box.info  .rec-title { color: var(--info); }
+    .rec-box.warn  .rec-title { color: var(--warning); }
+    .rec-box.good  .rec-title { color: var(--success); }
+    .rec-item {
+      font-size: 13px; color: var(--text2); margin-bottom: 5px;
+      padding-left: 12px; position: relative; line-height: 1.5;
+    }
+    .rec-item::before { content: '→'; position: absolute; left: 0; color: var(--text3); }
+    .rec-item:last-child { margin-bottom: 0; }
+    .rec-item strong { color: var(--text); font-weight: 500; }
+    .rec-item .mono { font-family: var(--mono); color: var(--accent); }
+
+    .footer { text-align: center; padding: 24px; font-size: 11px; color: var(--text3); border-top: 1px solid var(--border); margin-top: 24px; font-family: var(--mono); line-height: 1.8; }
+    @media (max-width: 580px) {
+      .grid { grid-template-columns: 1fr; }
+      .main { padding: 14px 16px; }
+      .header { padding: 16px; }
+      .header-badge { display: none; }
+      .port-meta { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+<div class="header">
+  <div class="header-icon">⛳</div>
+  <div>
+    <h1>4-Port Iron Swing Weight Calculator</h1>
+    <p>Real-world calibrated · Bare head 256g · Port range 4g – 40g</p>
+  </div>
+  <div class="header-badge">v2.0</div>
+</div>
+
+<div class="main">
+  <div class="grid">
+    <div class="card">
+      <h3>Club Specs</h3>
+      <div class="ref-bar">
+        Bare head: <strong>256g</strong>
+        &nbsp;·&nbsp; Min head: <strong>260g</strong> (4×1g)
+        &nbsp;·&nbsp; Max head: <strong>296g</strong> (4×10g)
+      </div>
+      <div class="field">
+        <label>Shaft Weight (g)</label>
+        <input type="number" id="shaft" value="95" step="0.5" min="30" max="180">
+        <div class="hint">Use actual weighed shaft weight for best accuracy</div>
+      </div>
+      <div class="field">
+        <label>Finish Length (in)</label>
+        <input type="number" id="length" value="37" step="0.25" min="33" max="42">
+      </div>
+      <div class="field">
+        <label>Grip Weight (g)</label>
+        <input type="number" id="grip" value="50" step="0.5" min="20" max="120">
+        <div class="hint">Include grip tape — affects total weight only, not SW</div>
+      </div>
+      <div class="field">
+        <label>Counterbalance Plug (g)</label>
+        <input type="number" id="cb" value="0" step="1" min="0" max="100">
+        <div class="hint">Butt end plug weight · 0 = none</div>
+      </div>
+      <div class="field">
+        <label>Ferrule + Epoxy (g)</label>
+        <input type="number" id="ferrule" value="2" step="0.5" min="0" max="10">
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Targets</h3>
+      <div class="field">
+        <label>Target Swing Weight</label>
+        <div class="btn-row" id="letter-btns">
+          <button class="sw-btn" data-l="A">A</button>
+          <button class="sw-btn" data-l="B">B</button>
+          <button class="sw-btn" data-l="C">C</button>
+          <button class="sw-btn active" data-l="D">D</button>
+          <button class="sw-btn" data-l="E">E</button>
+        </div>
+        <div class="btn-row" id="num-btns"></div>
+      </div>
+      <div class="field" style="margin-top:14px;">
+        <label>Target Total Weight (g)</label>
+        <input type="number" id="targetwt" value="0" step="1" min="0" max="700">
+        <div class="hint">0 = ignore total weight constraint</div>
+      </div>
+      <div class="tol-box">
+        <div class="tol-label">Tolerances</div>
+        <div class="tol-pills">
+          <div class="tol-pill">SW ± 1.0 pt</div>
+          <div class="tol-pill">Weight ± 10g</div>
+        </div>
+        <div class="hint" style="margin-top:8px;">Outside tolerances = closest build shown with recommendations</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="results-card">
+    <h3>Results</h3>
+    <div class="metrics">
+      <div class="metric"><div class="m-label">SW at Min Ports (4g)</div><div class="m-value" id="sw-min">—</div></div>
+      <div class="metric"><div class="m-label">SW at Max Ports (40g)</div><div class="m-value" id="sw-max">—</div></div>
+      <div class="metric"><div class="m-label">Target SW</div><div class="m-value accent" id="tgt-sw-disp">D1</div></div>
+      <div class="metric"><div class="m-label">Base Weight (no ports)</div><div class="m-value" id="base-wt">—</div></div>
+    </div>
+    <div id="results-body"></div>
+  </div>
+
+  <div class="footer">
+    Calibrated from real-world builds · Bare head 256g<br>
+    Coefficients: shaft +0.19579 · length -(4.8 + shaft×0.09431) · port +1.0 · CB -0.5208 pts/g
+  </div>
+</div>
+
+<script>
+  const LETTERS    = ['A','B','C','D','E','F'];
+  const BARE_HEAD  = 256;
+  const BASE_SW    = -3.6;
+  const SHAFT_C    =  0.19579;
+  const PORT_C     =  1.0;
+  const CB_C       =  0.5208;
+  const WT_TOL     =  10;
+  const SW_TOL     =  1.0;
+  const CB_PLUGS   = [8, 12, 16, 20, 24, 28];
+
+  let targetLetter = 'D';
+  let targetNum    = 1;
+
+  function getInputs() {
+    return {
+      shaftG:   parseFloat(document.getElementById('shaft').value)    || 0,
+      lengthIn: parseFloat(document.getElementById('length').value)   || 37,
+      gripG:    parseFloat(document.getElementById('grip').value)     || 0,
+      cbG:      parseFloat(document.getElementById('cb').value)       || 0,
+      ferruleG: parseFloat(document.getElementById('ferrule').value)  || 0,
+      targetWt: parseFloat(document.getElementById('targetwt').value) || 0,
+    };
+  }
+
+  function calcSW(shaftG, lengthIn, cbG, portG) {
+    return BASE_SW
+      + shaftG * SHAFT_C
+      + (lengthIn - 37) * (4.8 + shaftG * 0.09431)
+      + portG * PORT_C
+      - cbG * CB_C;
+  }
+
+  function swToLabel(idx) {
+    if (idx <= 0)  return 'A0.0';
+    if (idx >= 59) return 'F9+';
+    const li = Math.floor(idx / 10);
+    const n  = idx - li * 10;
+    return LETTERS[Math.min(li, LETTERS.length - 1)] + n.toFixed(1);
+  }
+
+  function tgtIndex() {
+    return LETTERS.indexOf(targetLetter) * 10 + targetNum;
+  }
+
+  function dedupe(list) {
+    const seen = new Set();
+    return list.filter(c => {
+      const key = [...c.ports].sort((a, b) => a - b).join(',');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  // Find the best port combo (closest SW to target) regardless of tolerances
+  function findClosest(shaftG, lengthIn, cbG, tgt) {
+    let best = null;
+    let bestDiff = Infinity;
+    for (let p1 = 1; p1 <= 10; p1++)
+      for (let p2 = 1; p2 <= 10; p2++)
+        for (let p3 = 1; p3 <= 10; p3++)
+          for (let p4 = 1; p4 <= 10; p4++) {
+            const portTotal = p1 + p2 + p3 + p4;
+            const swIdx = calcSW(shaftG, lengthIn, cbG, portTotal);
+            const diff = Math.abs(swIdx - tgt);
+            if (diff < bestDiff) {
+              bestDiff = diff;
+              best = { ports:[p1,p2,p3,p4], portTotal, swIdx, swDiff: swIdx - tgt };
+            }
+          }
+    return best;
+  }
+
+  function makeRecommendations(shaftG, lengthIn, cbG, gripG, ferruleG, targetWt, tgt, baseWt, closest) {
+    const recs = [];
+    const clubWt = baseWt + closest.portTotal;
+    const swDiff = closest.swDiff; // positive = SW too high, negative = SW too low
+    const wtDiff = targetWt > 0 ? clubWt - targetWt : 0; // positive = too heavy, negative = too light
+
+    // ── Weight recommendations ──────────────────────────────
+    if (targetWt > 0 && Math.abs(wtDiff) > WT_TOL) {
+      if (wtDiff > 0) {
+        // Too heavy — recommend lighter shaft or lighter grip
+        const shaftAdj = Math.ceil(wtDiff);
+        const gripAdj  = Math.ceil(wtDiff);
+        recs.push({
+          type: 'warn',
+          title: '⚖️ Build is too heavy by ' + wtDiff.toFixed(1) + 'g',
+          items: [
+            `Use a <strong>lighter shaft</strong> — reduce shaft weight by <span class="mono">${shaftAdj}g</span> (try a <span class="mono">${(shaftG - shaftAdj).toFixed(1)}g</span> shaft)`,
+            `Or use a <strong>lighter grip</strong> — reduce grip weight by <span class="mono">${gripAdj}g</span> (try a <span class="mono">${(gripG - gripAdj).toFixed(1)}g</span> grip)`,
+            `Note: adjusting weight will also shift SW — re-check port weights after component swap`
+          ]
+        });
+      } else {
+        // Too light — recommend heavier shaft or heavier grip
+        const shaftAdj = Math.ceil(Math.abs(wtDiff));
+        const gripAdj  = Math.ceil(Math.abs(wtDiff));
+        recs.push({
+          type: 'warn',
+          title: '⚖️ Build is too light by ' + Math.abs(wtDiff).toFixed(1) + 'g',
+          items: [
+            `Use a <strong>heavier shaft</strong> — increase shaft weight by <span class="mono">${shaftAdj}g</span> (try a <span class="mono">${(shaftG + shaftAdj).toFixed(1)}g</span> shaft)`,
+            `Or use a <strong>heavier grip</strong> — increase grip weight by <span class="mono">${gripAdj}g</span> (try a <span class="mono">${(gripG + gripAdj).toFixed(1)}g</span> grip)`
+          ]
+        });
+      }
+    }
+
+    // ── SW recommendations ──────────────────────────────────
+    if (Math.abs(swDiff) > SW_TOL) {
+      if (swDiff < 0) {
+        // SW too low — need more SW than max ports (40g) can provide
+        const ptsShort = Math.abs(swDiff);
+        // How much heavier shaft needed? Each gram of shaft = SHAFT_C pts
+        const shaftNeeded = Math.ceil(ptsShort / SHAFT_C);
+        recs.push({
+          type: 'info',
+          title: '🎯 SW target is ' + ptsShort.toFixed(1) + ' points below achievable range',
+          items: [
+            `Even at maximum port weight (40g), SW is <span class="mono">${ptsShort.toFixed(1)} pts</span> too low`,
+            `Use a <strong>heavier shaft</strong> — increase by <span class="mono">${shaftNeeded}g</span> (try a <span class="mono">${(shaftG + shaftNeeded).toFixed(1)}g</span> shaft)`,
+            `Or increase <strong>finish length</strong> if build specs allow`
+          ]
+        });
+      } else {
+        // SW too high — need less SW than min ports (4g) can provide
+        // Recommend CB plug
+        const ptsOver = swDiff;
+        // Find the best CB plug that brings SW within tolerance
+        const currentCB = cbG;
+        const additionalCBNeeded = ptsOver / CB_C;
+        const totalCBNeeded = currentCB + additionalCBNeeded;
+
+        // Find closest available plug
+        let bestPlug = null;
+        let bestPlugDiff = Infinity;
+        CB_PLUGS.forEach(plug => {
+          const newSW = calcSW(shaftG, lengthIn, plug, closest.portTotal);
+          const diff = Math.abs(newSW - tgt);
+          if (diff < bestPlugDiff) { bestPlugDiff = diff; bestPlug = plug; }
+        });
+
+        // Also check if a lighter shaft helps
+        const shaftReduction = Math.ceil(ptsOver / SHAFT_C);
+
+        const items = [
+          `Even at minimum port weight (4g), SW is <span class="mono">${ptsOver.toFixed(1)} pts</span> too high`
+        ];
+
+        if (currentCB > 0) {
+          items.push(`Increase your current counterbalance plug — you need approximately <span class="mono">${totalCBNeeded.toFixed(0)}g</span> total CB weight`);
+        }
+
+        if (bestPlug !== null) {
+          const newSWWithPlug = calcSW(shaftG, lengthIn, bestPlug, 4);
+          items.push(`Add a <strong>${bestPlug}g counterbalance plug</strong> — this brings SW to approximately <span class="mono">${swToLabel(newSWWithPlug)}</span> at minimum ports`);
+        }
+
+        items.push(`Or use a <strong>lighter shaft</strong> — reduce by <span class="mono">${shaftReduction}g</span> (try a <span class="mono">${(shaftG - shaftReduction).toFixed(1)}g</span> shaft)`);
+
+        recs.push({ type: 'info', title: '🎯 SW target is ' + ptsOver.toFixed(1) + ' points above achievable range', items });
+      }
+    }
+
+    return recs;
+  }
+
+  function calc() {
+    const { shaftG, lengthIn, gripG, cbG, ferruleG, targetWt } = getInputs();
+
+    const baseWt = BARE_HEAD + shaftG + gripG + cbG + ferruleG;
+    document.getElementById('base-wt').textContent = baseWt.toFixed(1) + 'g';
+
+    const swMin = calcSW(shaftG, lengthIn, cbG, 4);
+    const swMax = calcSW(shaftG, lengthIn, cbG, 40);
+    document.getElementById('sw-min').textContent = swToLabel(swMin);
+    document.getElementById('sw-max').textContent = swToLabel(swMax);
+
+    const tgt = tgtIndex();
+    document.getElementById('tgt-sw-disp').textContent = targetLetter + targetNum;
+
+    // Find all valid combos within tolerance
+    const results = [];
+    for (let p1 = 1; p1 <= 10; p1++)
+      for (let p2 = 1; p2 <= 10; p2++)
+        for (let p3 = 1; p3 <= 10; p3++)
+          for (let p4 = 1; p4 <= 10; p4++) {
+            const portTotal = p1 + p2 + p3 + p4;
+            const swIdx  = calcSW(shaftG, lengthIn, cbG, portTotal);
+            const swDiff = swIdx - tgt;
+            const clubWt = baseWt + portTotal;
+            const wtDiff = targetWt > 0 ? clubWt - targetWt : 0;
+            const swOk   = Math.abs(swDiff) <= SW_TOL;
+            const wtOk   = targetWt === 0 || Math.abs(wtDiff) <= WT_TOL;
+            if (swOk && wtOk) {
+              results.push({ ports:[p1,p2,p3,p4], portTotal, sw: swToLabel(swIdx), swDiff, clubWt, wtDiff, exact: Math.abs(swDiff) < 0.051 });
+            }
+          }
+
+    const body = document.getElementById('results-body');
+    body.innerHTML = '';
+
+    if (results.length === 0) {
+      // Find closest build and generate recommendations
+      const closest = findClosest(shaftG, lengthIn, cbG, tgt);
+      const clubWt  = baseWt + closest.portTotal;
+      const wtDiff  = targetWt > 0 ? clubWt - targetWt : 0;
+      const headWt  = BARE_HEAD + closest.portTotal;
+
+      // Show closest build
+      const swClass = Math.abs(closest.swDiff) <= SW_TOL ? 'ok' : (closest.swDiff > 0 ? 'over' : 'under');
+      const wtClass = targetWt === 0 ? 'ok' : (Math.abs(wtDiff) <= WT_TOL ? 'ok' : (wtDiff > 0 ? 'over' : 'under'));
+
+      const cbDiv = document.createElement('div');
+      cbDiv.innerHTML = `
+        <div class="closest-build">
+          <div class="cb-title">Closest Achievable Build</div>
+          <div class="cb-row">
+            <div class="cb-stat">
+              <div class="cs-label">Port Combo</div>
+              <div class="cs-value" style="font-size:13px;padding-top:3px;">${closest.ports.join(' / ')}g</div>
+            </div>
+            <div class="cb-stat">
+              <div class="cs-label">Achieved SW</div>
+              <div class="cs-value ${swClass}">${swToLabel(closest.swIdx)}</div>
+            </div>
+            <div class="cb-stat">
+              <div class="cs-label">SW Delta</div>
+              <div class="cs-value ${swClass}">${closest.swDiff >= 0 ? '+' : ''}${closest.swDiff.toFixed(2)}</div>
+            </div>
+            <div class="cb-stat">
+              <div class="cs-label">Total Weight</div>
+              <div class="cs-value ${wtClass}">${clubWt.toFixed(1)}g${targetWt > 0 ? ' (' + (wtDiff >= 0 ? '+' : '') + wtDiff.toFixed(1) + 'g)' : ''}</div>
+            </div>
+            <div class="cb-stat">
+              <div class="cs-label">Head Weight</div>
+              <div class="cs-value">${headWt}g</div>
+            </div>
+            <div class="cb-stat">
+              <div class="cs-label">Port Weight</div>
+              <div class="cs-value">${closest.portTotal}g</div>
+            </div>
+          </div>
+        </div>
+      `;
+      body.appendChild(cbDiv);
+
+      // Generate and show recommendations
+      const recs = makeRecommendations(shaftG, lengthIn, cbG, gripG, ferruleG, targetWt, tgt, baseWt, closest);
+      recs.forEach(rec => {
+        const div = document.createElement('div');
+        div.className = `rec-box ${rec.type}`;
+        div.innerHTML = `
+          <div class="rec-title">${rec.title}</div>
+          ${rec.items.map(i => `<div class="rec-item">${i}</div>`).join('')}
+        `;
+        body.appendChild(div);
+      });
+      return;
+    }
+
+    // Normal results
+    const deduped = dedupe(results).sort((a, b) => Math.abs(a.swDiff) - Math.abs(b.swDiff));
+    const exacts  = deduped.filter(c => c.exact);
+    const closes  = deduped.filter(c => !c.exact).slice(0, 15);
+
+    function renderSection(title, items, isExact) {
+      if (items.length === 0) return;
+      const h = document.createElement('div');
+      h.className = 'section-title';
+      h.textContent = title;
+      body.appendChild(h);
+      const list = document.createElement('div');
+      list.className = 'port-list';
+      items.forEach(c => {
+        const el = document.createElement('div');
+        el.className = 'port-item ' + (isExact ? 'exact' : 'close');
+        const swSign    = c.swDiff > 0 ? '+' : '';
+        const deltaText = isExact ? 'exact' : `${swSign}${c.swDiff.toFixed(2)}`;
+        const wtText    = targetWt > 0
+          ? `${c.clubWt.toFixed(1)}g total (${c.wtDiff >= 0 ? '+' : ''}${c.wtDiff.toFixed(1)}g)`
+          : `${c.clubWt.toFixed(1)}g total`;
+        const headWt = BARE_HEAD + c.portTotal;
+        el.innerHTML = `
+          <span class="port-ports">${c.ports.join(' / ')}g</span>
+          <span class="port-sw">${c.sw}</span>
+          <span class="badge ${isExact ? 'exact' : 'close'}">${deltaText}</span>
+          <span class="port-meta">${c.portTotal}g ports · ${headWt}g head · ${wtText}</span>
+        `;
+        list.appendChild(el);
+      });
+      body.appendChild(list);
+    }
+
+    renderSection('Exact Matches', exacts, true);
+    renderSection('Within ±1 SW Point', closes, false);
+  }
+
+  // Build number buttons
+  const numBtns = document.getElementById('num-btns');
+  [0,0.5,1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9].forEach(n => {
+    const b = document.createElement('button');
+    b.className = 'sw-btn num-btn' + (n === 1 ? ' active' : '');
+    b.dataset.n = n;
+    b.textContent = n;
+    numBtns.appendChild(b);
+  });
+
+  document.getElementById('letter-btns').addEventListener('click', e => {
+    const btn = e.target.closest('[data-l]');
+    if (!btn) return;
+    document.querySelectorAll('#letter-btns .sw-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    targetLetter = btn.dataset.l;
+    calc();
+  });
+
+  document.getElementById('num-btns').addEventListener('click', e => {
+    const btn = e.target.closest('[data-n]');
+    if (!btn) return;
+    document.querySelectorAll('#num-btns .sw-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    targetNum = parseFloat(btn.dataset.n);
+    calc();
+  });
+
+  ['shaft','length','grip','cb','ferrule','targetwt'].forEach(id => {
+    document.getElementById(id).addEventListener('input', calc);
+  });
+
+  calc();
+</script>
+</body>
+</html>
